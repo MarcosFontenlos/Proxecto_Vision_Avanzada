@@ -1,0 +1,60 @@
+\documentclass{article}
+\usepackage[galician]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{esint} 				%simbolos de integrales
+\usepackage{amssymb}
+\usepackage{graphicx,fancybox}
+\usepackage{mathrsfs} 		
+
+\title{Comportamento baseado en visión para Robulab 10}
+\author{Marcos Fontenlos Ferreiro, Alejandro Solar Iglesias}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section*{Proposta de traballo}
+
+\section{Extracto}
+
+Os obxectivos son implementar un sistema de visión artificial baseado en redes neuronais para a detección de persoas no robot Robulab 10.
+O sistema deberá ser capaz de detectar persoas en tempo real e gobernar o robot para que siga o seu movemento. Tamén intentaremos implementar un sistema 
+de detección gestual empregando a librería \textit{mediapipe} facendo que o robot siga algunha consigna particular para cada xesto. Simultáneamente á implementación 
+trataremos de documentar o proceso con información detallada para que quede un manual de uso para próximos usuarios.
+
+\section{Introdución e contextualización}
+
+\subsection{Visión xeral}
+
+É importante a aplicación das técnicas que vemos no curso de Visión Artificial Avanzada en plataformas hardware reais e non só en sistemas encaixados básicos coma un PC.
+Os robots son nunha última instancia o noso obxeto de estudo e é importante compaxinar os coñecementos adquiridos en diversas asignaturas para conseguir 
+comportamentos complexos e útiles nos robots. 
+
+\subsection{Antecedentes do tema}
+
+Evidentemente a detección de persoas e xestos non é un tema novedoso e a nosa intención non é revolucionar estes campos, senón aplicar as técnicas máis prometedoras 
+en cadanseu ámbito na plataforma robótica. Maior é a preocupación polo manexo do propio robot que polo propio sistema de visión; non existe moita variedade de proxectos nesta plataforma 
+ou polo menos non son de fácil acceso máis aló da documentación oficial.
+
+\subsection{Relevancia/Impacto}
+
+De novo, o proxecto non vai traer unha gran revolución na robótica nin na visión artificial máis aló da utilidade dun robot sigue persoas e detector de xestos, pero si que deixará unha documentación que poderá ser útil para futuros proxectos.
+Sobre todo para o traballo con esta plataforma hardware concreta. 
+\section{Metodoloxía proposta}
+Empregaremos a librería \textit{mediapipe} e \texttt{Yolo} para a detección de persoas e xestos xunto ca documentación oficial de Robulab 10 para a integración do sistema 
+de recoñecemento no robot.
+
+\section{Plan de traballo}
+\begin{itemize}
+    \item Aproximación á librería \textit{mediapipe} e \texttt{Yolo} para a detección de persoas e xestos. Esta última xa a temos traballada na asignatura de Visión Artificial Avanzada.
+    \item Estudo do funcionamento do robot Robulab 10 e a súa integración coas librerías de visión artificial.
+    \item Implementación do sistema de detección de persoas e xestos.
+    \item Probas de funcionamento do sistema de visión e do robot.
+    \item Documentación do proceso de implementación e funcionamento do sistema de visión. (De forma máis ou menos simultánea ás dúas anteriores)
+    \item Posible implementación de xestos personalizados para o control do robot.
+\end{itemize}
+
+\end{document}
