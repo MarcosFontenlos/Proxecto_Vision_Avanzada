@@ -1,0 +1,37 @@
+[1.131s] Invoking command in '/home/marcos/vision_ws/src/yolo_detector': PYTHONPATH=/home/marcos/vision_ws/build/yolo_detector/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/marcos/vision_ws/install/yolo_detector/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/yolo_detector build --build-base /home/marcos/vision_ws/build/yolo_detector/build install --record /home/marcos/vision_ws/build/yolo_detector/install.log --single-version-externally-managed install_data
+[1.334s] running egg_info
+[1.334s] creating ../../build/yolo_detector/yolo_detector.egg-info
+[1.334s] writing ../../build/yolo_detector/yolo_detector.egg-info/PKG-INFO
+[1.334s] writing dependency_links to ../../build/yolo_detector/yolo_detector.egg-info/dependency_links.txt
+[1.334s] writing entry points to ../../build/yolo_detector/yolo_detector.egg-info/entry_points.txt
+[1.334s] writing requirements to ../../build/yolo_detector/yolo_detector.egg-info/requires.txt
+[1.334s] writing top-level names to ../../build/yolo_detector/yolo_detector.egg-info/top_level.txt
+[1.342s] writing manifest file '../../build/yolo_detector/yolo_detector.egg-info/SOURCES.txt'
+[1.343s] reading manifest file '../../build/yolo_detector/yolo_detector.egg-info/SOURCES.txt'
+[1.343s] writing manifest file '../../build/yolo_detector/yolo_detector.egg-info/SOURCES.txt'
+[1.344s] running build
+[1.344s] running build_py
+[1.344s] creating /home/marcos/vision_ws/build/yolo_detector/build
+[1.344s] creating /home/marcos/vision_ws/build/yolo_detector/build/lib
+[1.344s] creating /home/marcos/vision_ws/build/yolo_detector/build/lib/yolo_detector
+[1.344s] copying yolo_detector/__init__.py -> /home/marcos/vision_ws/build/yolo_detector/build/lib/yolo_detector
+[1.344s] copying yolo_detector/yolo_node.py -> /home/marcos/vision_ws/build/yolo_detector/build/lib/yolo_detector
+[1.344s] running install
+[1.344s] running install_lib
+[1.344s] creating /home/marcos/vision_ws/install/yolo_detector/lib/python3.10/site-packages/yolo_detector
+[1.345s] copying /home/marcos/vision_ws/build/yolo_detector/build/lib/yolo_detector/__init__.py -> /home/marcos/vision_ws/install/yolo_detector/lib/python3.10/site-packages/yolo_detector
+[1.345s] copying /home/marcos/vision_ws/build/yolo_detector/build/lib/yolo_detector/yolo_node.py -> /home/marcos/vision_ws/install/yolo_detector/lib/python3.10/site-packages/yolo_detector
+[1.345s] byte-compiling /home/marcos/vision_ws/install/yolo_detector/lib/python3.10/site-packages/yolo_detector/__init__.py to __init__.cpython-310.pyc
+[1.345s] byte-compiling /home/marcos/vision_ws/install/yolo_detector/lib/python3.10/site-packages/yolo_detector/yolo_node.py to yolo_node.cpython-310.pyc
+[1.345s] running install_data
+[1.345s] creating /home/marcos/vision_ws/install/yolo_detector/share/ament_index
+[1.345s] creating /home/marcos/vision_ws/install/yolo_detector/share/ament_index/resource_index
+[1.345s] creating /home/marcos/vision_ws/install/yolo_detector/share/ament_index/resource_index/packages
+[1.345s] copying resource/yolo_detector -> /home/marcos/vision_ws/install/yolo_detector/share/ament_index/resource_index/packages
+[1.345s] copying package.xml -> /home/marcos/vision_ws/install/yolo_detector/share/yolo_detector
+[1.345s] running install_egg_info
+[1.347s] Copying ../../build/yolo_detector/yolo_detector.egg-info to /home/marcos/vision_ws/install/yolo_detector/lib/python3.10/site-packages/yolo_detector-0.0.0-py3.10.egg-info
+[1.347s] running install_scripts
+[1.361s] Installing yolo_node script to /home/marcos/vision_ws/install/yolo_detector/lib/yolo_detector
+[1.361s] writing list of installed files to '/home/marcos/vision_ws/build/yolo_detector/install.log'
+[1.399s] Invoked command in '/home/marcos/vision_ws/src/yolo_detector' returned '0': PYTHONPATH=/home/marcos/vision_ws/build/yolo_detector/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/marcos/vision_ws/install/yolo_detector/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/yolo_detector build --build-base /home/marcos/vision_ws/build/yolo_detector/build install --record /home/marcos/vision_ws/build/yolo_detector/install.log --single-version-externally-managed install_data

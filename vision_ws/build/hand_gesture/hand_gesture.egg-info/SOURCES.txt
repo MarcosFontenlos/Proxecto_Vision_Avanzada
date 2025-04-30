@@ -1,0 +1,15 @@
+package.xml
+setup.cfg
+setup.py
+../../build/hand_gesture/hand_gesture.egg-info/PKG-INFO
+../../build/hand_gesture/hand_gesture.egg-info/SOURCES.txt
+../../build/hand_gesture/hand_gesture.egg-info/dependency_links.txt
+../../build/hand_gesture/hand_gesture.egg-info/entry_points.txt
+../../build/hand_gesture/hand_gesture.egg-info/requires.txt
+../../build/hand_gesture/hand_gesture.egg-info/top_level.txt
+../../build/hand_gesture/hand_gesture.egg-info/zip-safe
+hand_gesture/__init__.py
+resource/hand_gesture
+test/test_copyright.py
+test/test_flake8.py
+test/test_pep257.py
