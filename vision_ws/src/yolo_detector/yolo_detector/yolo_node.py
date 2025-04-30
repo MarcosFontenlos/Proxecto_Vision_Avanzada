@@ -9,9 +9,10 @@ class YoloDetector(Node):
     def __init__(self):
         super().__init__('yolo_node')
         self.bridge = CvBridge()
-        self.model = YOLO('yolov8n.pt')  # Modelo pequeno, podes usar yolov8m.pt ou yolov8s.pt
-        self.cap = cv2.VideoCapture(0)  # Webcam do portátil
-        self.timer = self.create_timer(0.1, self.detect_callback)  # 10 Hz
+        self.model = YOLO('yolov8n.pt')
+        self.cap = cv2.VideoCapture(0)
+        self.timer = self.create_timer(0.1, self.detect_callback)
+        cv2.namedWindow('Detección YOLO', cv2.WINDOW_NORMAL)  # Crea la ventana una vez al inicio
 
     def detect_callback(self):
         ret, frame = self.cap.read()
@@ -19,18 +20,18 @@ class YoloDetector(Node):
             self.get_logger().warn('Non se puido ler da cámara')
             return
 
-        results = self.model(frame)[0]  # Collemos só o primeiro resultado
+        results = self.model(frame)[0]
         for box in results.boxes:
             cls = int(box.cls[0])
             conf = box.conf[0]
             label = self.model.names[cls]
-            if label in ['person', 'hand']:  # "hand" non está incluído normalmente, é só se adestraches un modelo personalizado
+            if label in ['person', 'hand']:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
                 cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 cv2.putText(frame, f'{label} {conf:.2f}', (x1, y1 - 10),
                             cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-        # Mostramos só unha ventá
+        # Actualiza la ventana existente en lugar de crear una nueva
         cv2.imshow('Detección YOLO', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.cap.release()
