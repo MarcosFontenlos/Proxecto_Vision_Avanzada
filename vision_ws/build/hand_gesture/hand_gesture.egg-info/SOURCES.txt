@@ -9,6 +9,7 @@ setup.py
 ../../build/hand_gesture/hand_gesture.egg-info/top_level.txt
 ../../build/hand_gesture/hand_gesture.egg-info/zip-safe
 hand_gesture/__init__.py
+hand_gesture/gesture_node.py
 resource/hand_gesture
 test/test_copyright.py
 test/test_flake8.py

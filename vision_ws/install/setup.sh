@@ -7,7 +7,7 @@
 # since a plain shell script can't determine its own path when being sourced
 # either use the provided COLCON_CURRENT_PREFIX
 # or fall back to the build time prefix (if it exists)
-_colcon_prefix_chain_sh_COLCON_CURRENT_PREFIX=/home/marcos/USC/Vision_avanzada/Proxecto_Final/vision_ws/install
+_colcon_prefix_chain_sh_COLCON_CURRENT_PREFIX=/home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/install
 if [ ! -z "$COLCON_CURRENT_PREFIX" ]; then
   _colcon_prefix_chain_sh_COLCON_CURRENT_PREFIX="$COLCON_CURRENT_PREFIX"
 elif [ ! -d "$_colcon_prefix_chain_sh_COLCON_CURRENT_PREFIX" ]; then

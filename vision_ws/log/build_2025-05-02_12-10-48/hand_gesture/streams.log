@@ -1,0 +1,27 @@
+[0.661s] Invoking command in '/home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/src/hand_gesture': PS1=(Vision) \[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ PYTHONPATH=/home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/build/hand_gesture/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/install/hand_gesture/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/hand_gesture build --build-base /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/build/hand_gesture/build install --record /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/build/hand_gesture/install.log --single-version-externally-managed install_data
+[0.826s] running egg_info
+[0.835s] writing ../../build/hand_gesture/hand_gesture.egg-info/PKG-INFO
+[0.836s] writing dependency_links to ../../build/hand_gesture/hand_gesture.egg-info/dependency_links.txt
+[0.836s] writing entry points to ../../build/hand_gesture/hand_gesture.egg-info/entry_points.txt
+[0.836s] writing requirements to ../../build/hand_gesture/hand_gesture.egg-info/requires.txt
+[0.836s] writing top-level names to ../../build/hand_gesture/hand_gesture.egg-info/top_level.txt
+[0.919s] reading manifest file '../../build/hand_gesture/hand_gesture.egg-info/SOURCES.txt'
+[0.920s] writing manifest file '../../build/hand_gesture/hand_gesture.egg-info/SOURCES.txt'
+[0.920s] running build
+[0.920s] running build_py
+[0.920s] copying hand_gesture/__init__.py -> /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/build/hand_gesture/build/lib/hand_gesture
+[0.920s] copying hand_gesture/gesture_node.py -> /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/build/hand_gesture/build/lib/hand_gesture
+[0.920s] running install
+[0.923s] running install_lib
+[0.933s] copying /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/build/hand_gesture/build/lib/hand_gesture/gesture_node.py -> /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/install/hand_gesture/lib/python3.10/site-packages/hand_gesture
+[0.934s] byte-compiling /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/install/hand_gesture/lib/python3.10/site-packages/hand_gesture/gesture_node.py to gesture_node.cpython-310.pyc
+[0.934s] running install_data
+[0.934s] copying resource/hand_gesture -> /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/install/hand_gesture/share/ament_index/resource_index/packages
+[0.934s] copying package.xml -> /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/install/hand_gesture/share/hand_gesture
+[0.934s] running install_egg_info
+[0.945s] removing '/home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/install/hand_gesture/lib/python3.10/site-packages/hand_gesture-0.0.0-py3.10.egg-info' (and everything under it)
+[0.945s] Copying ../../build/hand_gesture/hand_gesture.egg-info to /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/install/hand_gesture/lib/python3.10/site-packages/hand_gesture-0.0.0-py3.10.egg-info
+[0.945s] running install_scripts
+[0.970s] Installing gesture_node script to /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/install/hand_gesture/lib/hand_gesture
+[0.970s] writing list of installed files to '/home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/build/hand_gesture/install.log'
+[0.995s] Invoked command in '/home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/src/hand_gesture' returned '0': PS1=(Vision) \[\e]0;\u@\h: \w\a\]${debian_chroot:+($debian_chroot)}\[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ PYTHONPATH=/home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/build/hand_gesture/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/install/hand_gesture/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py egg_info --egg-base ../../build/hand_gesture build --build-base /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/build/hand_gesture/build install --record /home/alex/Desktop/Visión Artificial Avanzada/Proyecto/Proxecto_Vision_Avanzada/vision_ws/build/hand_gesture/install.log --single-version-externally-managed install_data

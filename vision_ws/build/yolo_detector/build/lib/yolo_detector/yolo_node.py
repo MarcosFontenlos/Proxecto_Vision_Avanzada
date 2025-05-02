@@ -7,39 +7,32 @@ from ultralytics import YOLO
 
 class YoloDetector(Node):
     def __init__(self):
-        super().__init__('yolo_detector')
+        super().__init__('yolo_node')
         self.bridge = CvBridge()
-        self.model = YOLO('yolov8n.pt')  # O un modelo personalizado con detección de manos
+        self.model = YOLO('yolov8n.pt')
         self.cap = cv2.VideoCapture(0)
-        self.hand_roi_pub = self.create_publisher(Image, '/hand_rois', 10)
         self.timer = self.create_timer(0.1, self.detect_callback)
+        cv2.namedWindow('Detección YOLO', cv2.WINDOW_NORMAL)  # Crea la ventana una vez al inicio
 
     def detect_callback(self):
         ret, frame = self.cap.read()
         if not ret:
-            self.get_logger().warn('No se pudo leer la cámara')
+            self.get_logger().warn('Non se puido ler da cámara')
             return
 
         results = self.model(frame)[0]
-        hand_boxes = []
-
-        # Detección de manos (asumiendo que 'hand' es una clase en tu modelo)
         for box in results.boxes:
             cls = int(box.cls[0])
+            conf = box.conf[0]
             label = self.model.names[cls]
-            if label == 'hand':  # Ajusta según las clases de tu modelo
+            if label in ['person', 'hand']:
                 x1, y1, x2, y2 = map(int, box.xyxy[0])
-                hand_boxes.append((x1, y1, x2, y2))
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(frame, f'{label} {conf:.2f}', (x1, y1 - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
 
-        # Publicar cada ROI de mano
-        for (x1, y1, x2, y2) in hand_boxes:
-            hand_roi = frame[y1:y2, x1:x2]  # Recortar la región de la mano
-            if hand_roi.size > 0:  # Asegurar que la ROI no está vacía
-                roi_msg = self.bridge.cv2_to_imgmsg(hand_roi, encoding='bgr8')
-                self.hand_roi_pub.publish(roi_msg)
-
-        # Visualización (opcional)
-        cv2.imshow('YOLO Detection', frame)
+        # Actualiza la ventana existente en lugar de crear una nueva
+        cv2.imshow('Detección YOLO', frame)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             self.cap.release()
             cv2.destroyAllWindows()
@@ -50,7 +43,7 @@ def main(args=None):
     node = YoloDetector()
     rclpy.spin(node)
     node.destroy_node()
-    rclpy.shutdown()
+    cv2.destroyAllWindows()
 
 if __name__ == '__main__':
     main()

@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from setuptools import find_packages, setup
 
 package_name = 'yolo_detector'
