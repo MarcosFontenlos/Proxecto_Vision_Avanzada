@@ -72,6 +72,19 @@ ros2 run hand_gesture gesture_node
 ros2 run robot_controller controller_node
 ```
 
+## 🕹 Conexión y Movimiento
+## 🔌 Conexión:
+ 
+- Pulsar el botón en la parte trasera del mando.  
+- Pulsar el botón **Start**.
+- Encenderá la luz. 
+
+## 🧭 Movimiento:
+
+- Pulsar el **gatillo izquierdo**.  
+- Pulsar el **botón A**.  
+- Usar el **joystick izquierdo** para moverse.
+    
 ## 📡 Topics utilizados
 
 - `/detecciones_yolo` – Detecciones de objetos con YOLO.
