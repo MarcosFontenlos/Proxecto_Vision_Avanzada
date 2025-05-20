@@ -1,6 +1,0 @@
-source;share/hand_gesture/hook/pythonpath.ps1
-source;share/hand_gesture/hook/pythonpath.dsv
-source;share/hand_gesture/hook/pythonpath.sh
-source;share/hand_gesture/hook/ament_prefix_path.ps1
-source;share/hand_gesture/hook/ament_prefix_path.dsv
-source;share/hand_gesture/hook/ament_prefix_path.sh
