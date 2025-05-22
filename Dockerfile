@@ -1,20 +1,24 @@
-FROM marcosfontenlos/ros_vision:cuda_prueba
+FROM marcosfontenlos/ros_vision_base:cuda124
 
-# Instalar dependencias para CUDA
-RUN apt-get update && apt-get install -y wget gnupg2 lsb-release
 
-# (Opcional) Instalar claves e repos de NVIDIA se necesitas compilar algo especial
-# Pero para PyTorch, o máis sinxelo é instalar directamente desde pip
-
-# Instalar PyTorch con soporte CUDA (usa unha versión que che funcione ->>)
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu124
-
+# Instalamos herramientas necesarias para catkin
 RUN apt-get update && apt-get install -y \
-    nano \
-    gedit \
-    curl \
-    wget \
+    python3-catkin-tools \
     python3-pip \
-    && apt-get clean
-# Verifica que torch detecta CUDA (opcional)
-CMD ["/bin/bash"]
+    && rm -rf /var/lib/apt/lists/*
+
+# Creamos el workspace catkin
+RUN mkdir -p /catkin_ws/src
+
+# Definimos el directorio de trabajo
+WORKDIR /catkin_ws
+
+# Inicializamos el workspace (catkin_make o catkin build)
+RUN /bin/bash -c "source /opt/ros/noetic/setup.bash && catkin_make"
+
+# Fuente automática del setup.bash del workspace para cuando abras el contenedor
+RUN echo "source /catkin_ws/devel/setup.bash" >> /root/.bashrc
+
+# Comando por defecto al ejecutar el contenedor
+CMD ["bash"]
+
