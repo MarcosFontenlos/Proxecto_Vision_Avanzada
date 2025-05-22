@@ -1,8 +1,0 @@
-Metadata-Version: 2.1
-Name: yolo_detector
-Version: 0.0.0
-Summary: Nodo que usa YOLOv8 para detectar personas y manos
-Maintainer: marcos
-Maintainer-email: marcosfontenlos@gmail.com
-License: MIT
-Requires-Dist: setuptools
