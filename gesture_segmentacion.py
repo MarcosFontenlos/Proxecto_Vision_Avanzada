@@ -34,7 +34,7 @@ class KalmanFilter1D:
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-ip', action='store_true', help='Usar cámara IP en lugar de cámara local')
-    parser.add_argument('--cam-index', type=int, default=2, help='Índice de cámara USB (ej. 0, 1, 2...)')
+    parser.add_argument('--cam-index', type=int, default=0, help='Índice de cámara USB (ej. 0, 1, 2...)')
     parser.add_argument('--output-csv', type=str, default='metricas_rendimiento.csv', help='Ruta del archivo CSV de salida para las métricas')
     return parser.parse_args()
 
@@ -88,14 +88,22 @@ class GestureSegmentDetector:
         self.busqueda_360_duracion = 10  # segundos para dar la vuelta completa
         self.ultima_botella_centro = None
         self.botella_detectada_durante_busqueda = False
+        self.contador_perdida_botella = 0
+        self.ticks_perdida_max = 30  # Mismo valor que para personas
+
+        # Variables para seguimiento de persona
+        self.contador_perdida_persona = 0
+        self.ticks_perdida_max = 30
+        self.lin_filtrado = 0
+        self.alpha_suavizado = 0.2
 
         # Filtros Kalman
         self.kalman_angular = KalmanFilter1D()
 
         # Control PID
-        self.pid_kp = 0.00007
-        self.pid_ki = 0.00001
-        self.pid_kd = 0.0001
+        self.pid_kp = 0.00009 # Ganancia proporcional
+        self.pid_ki = 0.000005  # Ganancia integral
+        self.pid_kd = 0.00005  # Ganancia derivativa
         self.pid_error_prev = 0
         self.pid_integral = 0
 
@@ -110,7 +118,7 @@ class GestureSegmentDetector:
             "precision_personas": [],
             "precision_mano": [],
             "precision_objeto": [],
-            "tiempo_estados": {"PARAR": 0, "SEGUIMIENTO_PERSONA": 0, "SEGUIMIENTO_OBJETO": 0},
+            "tiempo_estados": {"PARAR": 0, "SEGUIMIENTO_PERSONA": 0, "SEGUIMIENTO_OBJETO": 0, 'RECONOCIMIENTO': 0 },
             "distancia_objeto": [],
             "colisiones_evitadas": 0
         }
@@ -244,7 +252,23 @@ class GestureSegmentDetector:
                 estado_anterior = self.estado_actual
                 
                 if self.contador_parar >= self.frames_necesarios * self.umbral_confianza:
-                    self.estado_actual = "PARAR"
+                    self.estado_actual = "RECONOCIMIENTO"
+                    self.contador_cerrado = 0
+                    self.contador_objeto = 0
+                    self.contador_perdida_persona = 0
+                    self.contador_perdida_botella = 0
+                    self.botella_detectada_durante_busqueda = False
+                    self.busqueda_360_en_curso = False
+                
+                elif self.estado_actual == "PARAR":
+                    # Permanece en estado PARAR hasta nuevo gesto
+                    if self.contador_cerrado >= self.frames_necesarios * self.umbral_confianza:
+                        self.estado_actual = "SEGUIMIENTO_PERSONA"
+                    elif self.contador_objeto >= self.frames_necesarios * self.umbral_confianza:
+                        self.estado_actual = "SEGUIMIENTO_OBJETO"
+                        self.busqueda_360_en_curso = True
+                        self.busqueda_360_inicio = time.time()
+                        self.botella_detectada_durante_busqueda = False
                 
                 elif self.estado_actual == "RECONOCIMIENTO":
                     if self.contador_cerrado >= self.frames_necesarios * self.umbral_confianza:
@@ -281,87 +305,189 @@ class GestureSegmentDetector:
                     color = (255, 255, 0)
 
                 elif self.estado_actual == "SEGUIMIENTO_PERSONA":
-                    centro_persona, _, area_persona = self.detectar_persona(frame)
-                    if centro_persona is not None and isinstance(centro_persona, tuple) and len(centro_persona) == 2:
-                        # Control de giro con Kalman
-                        error_x = (frame.shape[1]/2) - centro_persona[0]
-                        ang = self.kalman_angular.update(error_x * 0.005)
+                    # Detectar personas en el frame (usando YOLOv8n como en gesture_movimiento.py)
+                    results_persona = self.modelo_personas(frame, verbose=False)
+                    persona_centro = None
+                    persona_area = 0
+                    
+                    for r in results_persona:
+                        for box in r.boxes:
+                            if int(box.cls[0]) == 0:  # Clase 0 = persona
+                                x1, y1, x2, y2 = map(int, box.xyxy[0])
+                                area = (x2 - x1) * (y2 - y1)
+                                cx = (x1 + x2) / 2
+                                cy = (y1 + y2) / 2
+                                persona_centro = (cx, cy)
+                                persona_area = area
+                                # Dibujar bbox (opcional)
+                                cv2.rectangle(frame_segmentado, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                                break  # Solo considerar la primera persona detectada
+                        if persona_centro:
+                            break
 
-                        # Control PID para distancia
+                    if persona_centro:
+                        centro_imagen = frame.shape[1] / 2
+                        margen = 30  # píxeles de tolerancia para considerar "centrado"
+                        velocidad_giro = 0.3  # velocidad angular fija (igual que gesture_movimiento.py)
+
+                        if persona_centro[0] < centro_imagen - margen:
+                            ang = velocidad_giro  # gira a la izquierda
+                        elif persona_centro[0] > centro_imagen + margen:
+                            ang = -velocidad_giro  # gira a la derecha
+                        else:
+                            ang = 0.0  # no gira
+
+                        # Control PID para distancia (igual que gesture_movimiento.py)
                         area_objetivo = 80000
                         tolerancia = 10000
-                        error = area_objetivo - area_persona
+                        error = area_objetivo - persona_area
 
                         if abs(error) > tolerancia:
                             self.pid_integral += error
                             derivada = error - self.pid_error_prev
                             lin = (self.pid_kp * error) + (self.pid_ki * self.pid_integral) + (self.pid_kd * derivada)
-                            lin = max(min(lin, 0.5), -0.2)
+                            lin = max(min(lin, 0.4), -0.2)  # mismos límites
                         else:
                             lin = 0.0
                             self.pid_integral = 0
 
                         self.pid_error_prev = error
 
-                        twist.linear.x = lin
+                        # Suavizado (opcional, igual que gesture_movimiento.py)
+                        self.lin_filtrado = self.alpha_suavizado * lin + (1 - self.alpha_suavizado) * self.lin_filtrado
+
+                        twist.linear.x = self.lin_filtrado
                         twist.angular.z = ang
                         texto_estado = "SIGUIENDO PERSONA"
+                        color = (0, 255, 0)
                     else:
-                        twist.linear.x = 0
-                        twist.angular.z = 0.1
+                        # Persona no detectada (comportamiento igual que gesture_movimiento.py)
+                        self.contador_perdida_persona += 1
+                        if self.contador_perdida_persona > self.ticks_perdida_max:
+                            print("[INFO] Persona perdida, volviendo a RECONOCIMIENTO")
+                            self.estado_actual = "RECONOCIMIENTO"
+                            twist.linear.x = 0
+                            twist.angular.z = 0
+                            self.contador_perdida_persona = 0
+                        else:
+                            # Girar despacio para buscar persona
+                            twist.linear.x = 0
+                            twist.angular.z = 0.1
                         texto_estado = "BUSCANDO PERSONA"
-                        self.metricas["perdidas_seguimiento"] += 1
-                    color = (0, 255, 0)
+                        self.metricas["perdidas_seguimiento"] += 1  # Mantener métricas
+                        color = (0, 255, 0)
 
                 elif self.estado_actual == "SEGUIMIENTO_OBJETO":
                     if self.busqueda_360_en_curso:
+                        # [1] Tiempo desde que comenzó la búsqueda 360°
                         tiempo_giro = time.time() - self.busqueda_360_inicio
+
                         if tiempo_giro < self.busqueda_360_duracion:
-                            # Búsqueda activa de 360°
+                            # [2] Intentar detectar botella en cada frame mientras gira
                             centro_botella, _, area_botella = self.detectar_botella(frame)
+
                             if centro_botella:
+                                # [3] Botella detectada → interrumpir búsqueda y pasar a seguimiento
                                 self.botella_detectada_durante_busqueda = True
                                 self.ultima_botella_centro = centro_botella
                                 self.ultima_area_botella = area_botella
+                                self.busqueda_360_en_curso = False
+                                self.contador_perdida_botella = 0
 
-                            twist.linear.x = 0
-                            twist.angular.z = 2 * math.pi / self.busqueda_360_duracion
-                            texto_estado = "BUSQUEDA 360°"
+                                texto_estado = "BOTELLA DETECTADA (INTERRUMPIR GIRO)"
+                                color = (255, 0, 0)
+                                continue  # saltar al siguiente bucle para iniciar seguimiento
+                            else:
+                                # [4] No se detectó botella aún → seguir girando
+                                twist.linear.x = 0
+                                twist.angular.z = 2 * math.pi / self.busqueda_360_duracion
+                                texto_estado = "BUSQUEDA 360°"
+                                color = (255, 255, 0)
                         else:
-                            # Finalizar búsqueda 360°
+                            # [5] Tiempo agotado → fin de búsqueda
                             self.busqueda_360_en_curso = False
                             if self.botella_detectada_durante_busqueda:
                                 texto_estado = "BOTELLA DETECTADA"
+                                color = (0, 255, 0)
                             else:
                                 self.estado_actual = "RECONOCIMIENTO"
                                 texto_estado = "NO SE ENCONTRO BOTELLA"
+                                color = (0, 0, 255)
+
                     else:
-                        # Seguimiento normal de botella
-                        centro_botella, _, area_botella = self.detectar_botella(frame)
-                        if centro_botella is not None and isinstance(centro_botella, tuple):
-                            error_x = (frame.shape[1]/2) - centro_botella[0]
-                            ang = self.kalman_angular.update(error_x * 0.005)
+                        results_seg = self.modelo_segmentacion(frame, verbose=False)
+                        mejor_confianza = 0
+                        botella_centro = None
+                        botella_area = 0
+
+                        for r in results_seg:
+                            for box in r.boxes:
+                                clase = int(box.cls[0])
+                                if clase == 39:
+                                    x1, y1, x2, y2 = map(int, box.xyxy[0])
+                                    confianza = float(box.conf[0])
+                                    if confianza > mejor_confianza:
+                                        mejor_confianza = confianza
+                                        cx = (x1 + x2) / 2
+                                        cy = (y1 + y2) / 2
+                                        botella_centro = (cx, cy)
+                                        botella_area = (x2 - x1) * (y2 - y1)
+                                        cv2.rectangle(frame_segmentado, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                            if botella_centro:
+                                break
+
+                        if botella_centro:
+                            centro_imagen = frame.shape[1] / 2
+                            margen = 30
+                            if botella_centro[0] < centro_imagen - margen:
+                                ang = 0.3
+                            elif botella_centro[0] > centro_imagen + margen:
+                                ang = -0.3
+                            else:
+                                ang = 0.0
+
+                            area_objetivo = 50000
+                            tolerancia = 10000
+                            error = area_objetivo - botella_area
+
+                            if abs(error) > tolerancia:
+                                self.pid_integral += error
+                                derivada = error - self.pid_error_prev
+                                lin = (self.pid_kp * error) + (self.pid_ki * self.pid_integral) + (self.pid_kd * derivada)
+                                lin = max(min(lin, 0.3), -0.1)
+                            else:
+                                lin = 0.0
+                                self.pid_integral = 0
+
+                            self.pid_error_prev = error
+                            self.lin_filtrado = self.alpha_suavizado * lin + (1 - self.alpha_suavizado) * self.lin_filtrado
 
                             if self.verificar_colision(frame):
                                 twist.linear.x = -0.1
+                                twist.angular.z = 0.1
                                 texto_estado = "OBSTACULO DETECTADO"
                                 color = (0, 0, 255)
                             else:
-                                if area_botella < 5000:
-                                    twist.linear.x = 0.15
-                                else:
-                                    twist.linear.x = 0.05
-                                texto_estado = "SIGUIENDO BOTELLA"
+                                twist.linear.x = self.lin_filtrado
+                                twist.angular.z = ang
+                                texto_estado = f"SIGUIENDO BOTELLA ({mejor_confianza:.2f})"
                                 color = (255, 0, 0)
 
-                            twist.angular.z = ang
-                            self.metricas["distancia_objeto"].append(1/area_botella if area_botella > 0 else 0)
+                            self.contador_perdida_botella = 0
                         else:
-                            twist.linear.x = 0.1
-                            twist.angular.z = 0.3
+                            self.contador_perdida_botella += 1
+                            if self.contador_perdida_botella > self.ticks_perdida_max:
+                                print("[INFO] Botella perdida, volviendo a RECONOCIMIENTO")
+                                self.estado_actual = "RECONOCIMIENTO"
+                                twist.linear.x = 0
+                                twist.angular.z = 0
+                                self.contador_perdida_botella = 0
+                            else:
+                                twist.linear.x = 0
+                                twist.angular.z = 0.2
                             texto_estado = "BUSCANDO BOTELLA"
-                            self.metricas["perdidas_seguimiento"] += 1
                             color = (255, 165, 0)
+
 
                 # Publicar comando de movimiento
                 try:
