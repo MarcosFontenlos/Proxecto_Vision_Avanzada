@@ -1,0 +1,12 @@
+Métrica,Valor
+perdidas_seguimiento,31
+perdidas_mano,680
+precision_personas,0
+precision_mano,0.9451134914362972
+precision_objeto,0
+tiempo_estados_PARAR,0
+tiempo_estados_SEGUIMIENTO_PERSONA,42.06963014602661
+tiempo_estados_SEGUIMIENTO_OBJETO,0
+tiempo_estados_RECONOCIMIENTO,10.249019384384155
+distancia_objeto,0
+colisiones_evitadas,0

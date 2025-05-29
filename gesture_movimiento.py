@@ -377,7 +377,7 @@ class GestureDetector:
                         self.estado_actual = "RECONOCIMIENTO"
                         self.contador_perdida_botella = 0
                         self.busqueda_360_en_curso = False
-                        cv2.putText(frame, "No se encontró botella", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                        cv2.putText(frame, "No se encontro botella", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
 
             else:
