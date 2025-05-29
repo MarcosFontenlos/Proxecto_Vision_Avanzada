@@ -8,6 +8,7 @@ import time
 from geometry_msgs.msg import Twist
 from ultralytics import YOLO
 import numpy as np
+import argparse
 
 class ModeloYolo:
     def __init__(self, ruta_modelo='botellas_yolov8m/weights/best.pt'):
@@ -50,6 +51,14 @@ class KalmanFilter1D:
         self.P = (np.eye(2) - K @ self.H) @ self.P
         return self.x[0, 0]
 
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-ip', action='store_true', help='Usar cámara IP en lugar de cámara local')
+    return parser.parse_args()
+
+args = parse_args()
+
+
 class GestureDetector:
     def __init__(self, cam_index=0):
         self.mp_hands = mp.solutions.hands
@@ -57,7 +66,12 @@ class GestureDetector:
                                          max_num_hands=1,
                                          min_detection_confidence=0.7)
         self.mp_drawing = mp.solutions.drawing_utils
-        self.cap = cv2.VideoCapture(cam_index)
+        if args.ip:
+            url_camara_ip = "http://192.168.1.10/axis-cgi/mjpg/video.cgi"
+            self.cap = cv2.VideoCapture(url_camara_ip)
+        else:
+            self.cap = cv2.VideoCapture(cam_index)
+
         self.pub = rospy.Publisher('/robulab10/cmd_vel', Twist, queue_size=10)
         rospy.init_node('gesture_controller', anonymous=True)
 
