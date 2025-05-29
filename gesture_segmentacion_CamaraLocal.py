@@ -10,7 +10,6 @@ import csv
 import os
 from datetime import datetime
 import math
-import argparse
 
 class KalmanFilter1D:
     def __init__(self, process_variance=1e-4, measurement_variance=1e-2):
@@ -31,16 +30,6 @@ class KalmanFilter1D:
         self.P = (np.eye(2) - K @ self.H) @ self.P
         return self.x[0, 0]
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-ip', action='store_true', help='Usar cámara IP en lugar de cámara local')
-    parser.add_argument('--cam-index', type=int, default=2, help='Índice de cámara USB (ej. 0, 1, 2...)')
-    parser.add_argument('--output-csv', type=str, default='metricas_rendimiento.csv', help='Ruta del archivo CSV de salida para las métricas')
-    return parser.parse_args()
-
-
-args = parse_args()
-
 class GestureSegmentDetector:
     def __init__(self, cam_index=0):
         # Inicializar MediaPipe Hands
@@ -54,13 +43,8 @@ class GestureSegmentDetector:
         self.modelo_segmentacion = YOLO('yolov8n-seg.pt')  # Segmentación
         self.modelo_personas = YOLO('yolov8n.pt')          # Detección de personas
 
-        # Inicializar cámara (igual que en gesture_movimiento.py)
-        if args.ip:
-            url_camara_ip = "http://192.168.1.10/axis-cgi/mjpg/video.cgi"
-            self.cap = cv2.VideoCapture(url_camara_ip)
-        else:
-            self.cap = cv2.VideoCapture(cam_index)
-
+        # Inicializar cámara
+        self.cap = cv2.VideoCapture(cam_index)
         if not self.cap.isOpened():
             print("[ERROR] No se pudo abrir la cámara")
             exit()
@@ -68,7 +52,7 @@ class GestureSegmentDetector:
         # Inicializar ROS (opcional)
         try:
             rospy.init_node('gesture_segment_controller', anonymous=True)
-            self.pub = rospy.Publisher('/robulab10/cmd_vel', Twist, queue_size=10)
+            self.pub = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
         except:
             print("[INFO] ROS no inicializado. Modo sin control de robot.")
 
@@ -115,7 +99,7 @@ class GestureSegmentDetector:
             "colisiones_evitadas": 0
         }
         self.tiempo_inicio_estado = time.time()
-        self.archivo_csv = args.output_csv if args.output_csv else "metricas_gesture_movimiento_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".csv"
+        self.archivo_csv = "metricas_gesture_movimiento_" + datetime.now().strftime("%Y%m%d_%H%M%S") + ".csv"
 
     def guardar_metricas(self):
         with open(self.archivo_csv, mode='w', newline='') as file:
@@ -217,7 +201,7 @@ class GestureSegmentDetector:
 
                         if dedos_levantados == 5:
                             self.gesto_actual = "PARAR"
-                        elif dedos_levantados <=1:
+                        elif dedos_levantados == 0:
                             self.gesto_actual = "CERRADO"
                         elif 1 <= dedos_levantados <= 2:
                             self.gesto_actual = "OBJETO"
@@ -282,7 +266,7 @@ class GestureSegmentDetector:
 
                 elif self.estado_actual == "SEGUIMIENTO_PERSONA":
                     centro_persona, _, area_persona = self.detectar_persona(frame)
-                    if centro_persona is not None and isinstance(centro_persona, tuple) and len(centro_persona) == 2:
+                    if centro_persona:
                         # Control de giro con Kalman
                         error_x = (frame.shape[1]/2) - centro_persona[0]
                         ang = self.kalman_angular.update(error_x * 0.005)
@@ -338,7 +322,7 @@ class GestureSegmentDetector:
                     else:
                         # Seguimiento normal de botella
                         centro_botella, _, area_botella = self.detectar_botella(frame)
-                        if centro_botella is not None and isinstance(centro_botella, tuple):
+                        if centro_botella:
                             error_x = (frame.shape[1]/2) - centro_botella[0]
                             ang = self.kalman_angular.update(error_x * 0.005)
 
@@ -388,5 +372,5 @@ class GestureSegmentDetector:
             cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    detector = GestureSegmentDetector(cam_index=args.cam_index)
+    detector = GestureSegmentDetector()
     detector.run()
