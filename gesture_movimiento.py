@@ -10,12 +10,12 @@ from ultralytics import YOLO
 import numpy as np
 import argparse
 
-class ModeloYolo:
-    def __init__(self, ruta_modelo='yolov8n.pt'):
+class ModeloYoloBotella:
+    def __init__(self, ruta_modelo='yolov8m.pt'):
         self.model = YOLO(ruta_modelo)
 
     def detectar_botellas(self, frame, dibujar=False):
-        results = self.model.predict(source=frame, imgsz=640, conf=0.5, verbose=False)
+        results = self.model.predict(source=frame, imgsz=640, conf=0.3, verbose=False)
         botellas_detectadas = 0
         botella_centro = None
         botella_area = 0
@@ -59,7 +59,7 @@ class GestureDetector:
         self.pub = rospy.Publisher('/robulab10/cmd_vel', Twist, queue_size=10)
         rospy.init_node('gesture_controller', anonymous=True)
 
-        self.modelo_botellas = ModeloYolo()
+        self.modelo_botellas = ModeloYoloBotella()
         self.modelo_personas = YOLO('yolov8n.pt')
 
         # Estados activos
@@ -89,7 +89,7 @@ class GestureDetector:
         
         # Umbrales de área para definir "cercanía"
         self.umbral_area_persona_cerca = 30000  # ajusta según tamaño bbox persona
-        self.umbral_area_botella_cerca = 8000  # ajusta según tamaño bbox botella
+        self.umbral_area_botella_cerca = 5000  # ajusta según tamaño bbox botella
 
         # Variables para control de búsqueda 360 grados botellas
         self.busqueda_360_en_curso = False
@@ -380,7 +380,7 @@ class GestureDetector:
                             print("[INFO] Botella alcanzada, deteniendo robot")
                             # Si quieres cambiar de estado aquí, puedes hacerlo
                         else:
-                            twist.linear.x = 0.1  # Avanza hacia la botella
+                            twist.linear.x = 0.2  # Avanza hacia la botella
                             twist.angular.z = ang
                             cv2.putText(frame, "Estado: APROXIMACIÓN BOTELLA", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
