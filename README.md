@@ -1,4 +1,3 @@
-
 # 🤖 Proxecto Visión Artificial Avanzada
 
 Este proyecto desarrolla un sistema de percepción visual modular sobre **ROS 2**, capaz de detectar personas y gestos mediante visión artificial, y controlar el movimiento de un robot móvil (Kompai) en función de la información captada.
@@ -7,27 +6,30 @@ Este proyecto desarrolla un sistema de percepción visual modular sobre **ROS 2*
 
 El sistema está compuesto por tres nodos principales:
 
-- 🟡 **`yolo_detector`**  
-  Detecta personas y objetos utilizando **YOLOv8**. Publica las detecciones en el topic `/detecciones_yolo`.
+* 🟡 **`gesture_movimiento.py`**
+  Versión inicial con detección de gestos de mano mediante MediaPipe y seguimiento de personas usando YOLOv8, además también se integrará la deteccion de botellas. Publica comandos en `/robulab10/cmd_vel`.
 
-- 🟢 **`hand_gesture`**  
-  Detecta gestos de mano a partir de la imagen de la cámara. Publica los resultados en `/gestos_mano`.
-
-- 🔵 **`robot_controller`**  
-  Recibe los datos anteriores, decide la acción a realizar, y envía comandos al robot **Kompai** vía HTTP o sockets.
+* 🟡 **`gesture_segmentacion.py`**
+  Combina detección de gestos con MediaPipe y seguimiento visual avanzado de personas y botellas con YOLOv8 + segmentación. Usa también un sistema de cambio de estado basado en gestos y lógica de transición inteligente.
 
 ## 📁 Estructura del Workspace
 
 ```
-vision_ws/
-├── src/
-│   ├── yolo_detector/        # Nodo YOLOv8
-│   ├── hand_gesture/         # Nodo de gestos de mano
-│   └── robot_controller/     # Nodo de control (por implementar)
-├── yolov8n.pt                # Modelo preentrenado YOLOv8 Nano
-├── install/
-├── build/
-└── log/
+Proxecto_Vision_Avanzada/
+├── gesture_movimiento.py               # Versión inicial (YOLO + MediaPipe)
+├── gesture_segmentacion.py            # Versión secundaria (YOLO + segmentación + gestos)
+├── gesture_segmentacion_CamaraLocal.py
+├── camara_ip.py                       # Captura por IP
+├── yolov8n.pt                         # Modelo YOLOv8 Nano (personas)
+├── yolov8n-seg.pt                     # Modelo YOLOv8 Nano Segmentación (botellas)
+├── yolov8m.pt                         # Modelo YOLOv8 Medium (alternativo)
+├── metricas.csv                       # Métricas automáticas
+├── metricas_rendimiento.csv           # Métricas personalizadas
+├── Dockerfile                         # Imagen base con ROS + YOLO + OpenCV
+├── README.md                          # Este documento
+└── Proposta_Traballo/
+    ├── PropostaTaballoFM_plantilla.tex # Memoria en LaTeX
+    └── PropostaTaballoFM_plantilla.pdf # PDF generado
 ```
 
 ## ⚙️ Instalación
@@ -36,73 +38,88 @@ vision_ws/
 
 ```bash
 git clone https://github.com/MarcosFontenlos/Proxecto_Vision_Avanzada.git
-cd Proxecto_Vision_Avanzada/vision_ws
+cd Proxecto_Vision_Avanzada
 ```
 
-2. Instalar dependencias (fuera del entorno virtual si usas ROS puro):
+2. Instalar dependencias (si **no** usas Docker):
 
 ```bash
-pip3 install ultralytics opencv-python
+pip3 install ultralytics opencv-python mediapipe
 ```
 
-3. Compilar el workspace:
+3. O ejecutar dentro del Docker preparado (recomendado), debes modificar ROS_IP y device /dev/video... por el numero asociado a la cámara:
 
 ```bash
-colcon build
-source install/setup.bash
+xhost +SI:localuser:root && echo $DISPLAY && docker run -it --rm \
+  --network=host \
+  --gpus all \
+  -e DISPLAY=$DISPLAY \
+  -e QT_X11_NO_MITSHM=1 \
+  -e ROS_MASTER_URI=http://192.168.1.30:11311 \
+  -e ROS_IP=192.168.1.188 \
+  -v /tmp/.X11-unix:/tmp/.X11-unix:rw \
+  -v /home/alex/Desktop/Vision_Artificial_Avanzada/Proyecto/Proxecto_Vision_Avanzada:/catkin_ws/src \
+  --device /dev/dri:/dev/dri \
+  --device /dev/video2:/dev/video2 \
+  marcosfontenlos/ros_vision_base:ws3
 ```
 
 ## ▶️ Ejecución
 
-### Nodo YOLO
+### ✅ Opcion 1: 
 
 ```bash
-ros2 run yolo_detector yolo_node
+python3 gesture_movimiento.py --cam-index 2
 ```
 
-### Nodo Gestos (cuando esté implementado)
+### ✅ Opcion 2
 
 ```bash
-ros2 run hand_gesture gesture_node
+python3 gesture_segmentacion.py --cam-index 2
 ```
 
-### Nodo Controlador del Robot (futuro)
+> Puedes usar `--ip` para conectar directamente a la Axis Camera:
 
 ```bash
-ros2 run robot_controller controller_node
+python3 gesture_segmentacion.py --ip
 ```
+
+---
 
 ## 🕹 Conexión y Movimiento
-## 🔌 Conexión:
- 
-- Pulsar el botón en la parte trasera del mando.  
-- Pulsar el botón **Start**.
-- Encenderá la luz. 
 
-## 🧭 Movimiento:
+### 🔌 Conexión:
 
-- Pulsar el **gatillo izquierdo**.  
-- Pulsar el **botón A**.  
-- Usar el **joystick izquierdo** para moverse.
-    
+* Pulsar el botón en la parte trasera del mando.
+* Pulsar **Start**.
+* Esperar a que se encienda la luz.
+
+### 🗺 Movimiento:
+
+* Pulsar **gatillo izquierdo (L2)**.
+* Mantener presionado **botón A**.
+* Usar **joystick izquierdo** para desplazarse.
+
 ## 📡 Topics utilizados
 
-- `/detecciones_yolo` – Detecciones de objetos con YOLO.
-- `/gestos_mano` – Gestos detectados con visión.
-- `/comando_robot` – Comandos al robot según percepción.
+* `/robulab10/cmd_vel`  → Movimiento del robot (Twist).
+* `/detecciones_yolo`   → Detecta personas/objetos (futuro).
+* `/gestos_mano`        → Gestos detectados (futuro).
 
 ## 🛠 Tecnologías
 
-- ROS 2 Humble
-- Python 3.10
-- YOLOv8 (Ultralytics)
-- OpenCV
-- Comunicación HTTP/TCP con robot Kompai
+* ROS Noetic
+* Python 3.10
+* YOLOv8 (Ultralytics)
+* OpenCV
+* MediaPipe 
+* Comunicación HTTP/TCP con robot Kompai
 
 ## 👥 Autores
 
-- **Marcos Fontenlos**  
+* **Marcos Fontenlos**
   [@MarcosFontenlos](https://github.com/MarcosFontenlos)
 
-- **Alejandro Solar**  
+* **Alejandro Solar**
   [@AlejandroSIRob](https://github.com/AlejandroSIRob)
+
