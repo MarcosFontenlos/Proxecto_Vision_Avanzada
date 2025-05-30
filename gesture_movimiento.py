@@ -11,11 +11,11 @@ import numpy as np
 import argparse
 
 class ModeloYoloBotella:
-    def __init__(self, ruta_modelo='yolov8m.pt'):
+    def __init__(self, ruta_modelo='yolov8n.pt'):
         self.model = YOLO(ruta_modelo)
-
+        self.area_minima_botella = 100  # Área mínima para considerar una botella detectada
     def detectar_botellas(self, frame, dibujar=False):
-        results = self.model.predict(source=frame, imgsz=640, conf=0.3, verbose=False)
+        results = self.model.predict(source=frame, imgsz=640, conf=0.2, verbose=False)
         botellas_detectadas = 0
         botella_centro = None
         botella_area = 0
@@ -25,6 +25,8 @@ class ModeloYoloBotella:
                 if int(box.cls[0]) == 39:
                     x1, y1, x2, y2 = map(int, box.xyxy[0])
                     area = (x2 - x1) * (y2 - y1)
+                    if area < self.area_minima_botella:
+                        continue  # Ignora detecciones demasiado pequeñas
                     if dibujar:
                         cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
                     if botella_centro is None or area > botella_area:
@@ -94,7 +96,7 @@ class GestureDetector:
         # Variables para control de búsqueda 360 grados botellas
         self.busqueda_360_en_curso = False
         self.busqueda_360_inicio = 0
-        self.busqueda_360_duracion = 10  # segundos para dar la vuelta completa
+        self.busqueda_360_duracion = 20  # segundos para dar la vuelta completa
 
         self.botella_detectada_durante_busqueda = False  # <-- Añade esta línea
 
@@ -110,6 +112,10 @@ class GestureDetector:
         self.ang_filtrado = 0.0
         self.alpha_suavizado = 0.3  # 0.0 = muy suave, 1.0 = sin suavizado
 
+        self.ultima_botella_centro = None
+        self.ultimo_tiempo_botella = None
+        self.timeout_aproximacion_botella = 2  # segundos para mantener la última posición
+        self.area_minima_botella = 100
         if not self.cap.isOpened():
             print("[ERROR] No se pudo abrir la cámara")
             sys.exit(1)
@@ -136,6 +142,10 @@ class GestureDetector:
     def run(self):
         last_persona_detectada_time = None
         last_botella_detectada_time = None
+
+        # Añade un contador para frames sin mano centrada
+        if not hasattr(self, 'contador_frames_sin_mano'):
+            self.contador_frames_sin_mano = 0
 
         while not rospy.is_shutdown():
             ret, frame = self.cap.read()
@@ -185,6 +195,7 @@ class GestureDetector:
 
             # Cambio de estados solo si la mano está centrada
             if mano_centrada_flag:
+                self.contador_frames_sin_mano = 0
                 # Prioridad PARAR
                 if self.contador_parar >= self.frames_parar_necesarios * self.precision_parar:
                     if self.estado_actual != "PARAR":
@@ -211,17 +222,22 @@ class GestureDetector:
                 elif self.contador_botella >= self.frames_reconocimiento_necesarios * self.precision_reconocimiento:
                     if self.estado_actual != "SEGUIMIENTO_BOTELLA":
                         print("[INFO] Estado cambiado a SEGUIMIENTO_BOTELLA")
-                        self.estado_actual = "SEGUIMIENTO_BOTELLA"
-                        self.busqueda_360_en_curso = True
-                        self.inicio_giro_botella = time.time()
-                        self.mejor_botella = None
-                        self.mejor_distancia = float('inf')
+                    self.estado_actual = "SEGUIMIENTO_BOTELLA"
+                    self.mejor_botella = None
+                    self.mejor_distancia = float('inf')
 
 
                 # Si no hay ningún gesto claro, volver a reconocimiento
-                elif self.estado_actual not in ["RECONOCIMIENTO", "PARAR"]:
+                elif self.estado_actual not in ["RECONOCIMIENTO", "PARAR", "SEGUIMIENTO_PERSONA", "SEGUIMIENTO_BOTELLA"]:
                     self.estado_actual = "RECONOCIMIENTO"
                     print("[INFO] Estado cambiado a RECONOCIMIENTO")
+
+            else:
+                self.contador_frames_sin_mano += 1
+                # Solo volver a RECONOCIMIENTO si llevamos varios frames sin mano centrada
+                if self.contador_frames_sin_mano > 15 and self.estado_actual not in ["RECONOCIMIENTO", "PARAR", "SEGUIMIENTO_PERSONA", "SEGUIMIENTO_BOTELLA"]:
+                    self.estado_actual = "RECONOCIMIENTO"
+                    print("[INFO] Estado cambiado a RECONOCIMIENTO por ausencia de mano")
 
             # Comportamiento por estado
             twist = Twist()
@@ -260,8 +276,8 @@ class GestureDetector:
                     x1, y1, x2, y2 = persona_seguir['bbox']
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-                    margen = 30  # píxeles de tolerancia para considerar "centrado"
-                    velocidad_giro = 0.3  # velocidad angular fija, ajusta según tu robot
+                    margen = 35  # píxeles de tolerancia para considerar "centrado"
+                    velocidad_giro = 0.2  # velocidad angular fija, ajusta según tu robot
 
                     if persona_centro[0] < centro_imagen - margen:
                         ang = velocidad_giro  # gira a la izquierda
@@ -291,16 +307,16 @@ class GestureDetector:
 
                     # Suavizado solo para avance
                     self.lin_filtrado = self.alpha_suavizado * lin + (1 - self.alpha_suavizado) * self.lin_filtrado
-
+                    self.ang_filtrado = self.alpha_suavizado * ang + (1 - self.alpha_suavizado) * self.ang_filtrado
                     twist.linear.x = self.lin_filtrado
-                    twist.angular.z = ang  # control directo, sin suavizado
+                    twist.angular.z = self.ang_filtrado
                     self.pub.publish(twist)
 
                     # Reset búsqueda
                     self.contador_perdida_persona = 0
                     self.busqueda_persona_en_curso = False
                     self.inicio_busqueda_persona = None
-
+                    
                 else:
                     # Persona no detectada
                     self.contador_perdida_persona += 1
@@ -334,64 +350,52 @@ class GestureDetector:
                         self.pub.publish(twist)
 
             elif self.estado_actual == "SEGUIMIENTO_BOTELLA":
-                # Iniciar búsqueda de 360 grados si no está en curso
                 if not self.busqueda_360_en_curso:
                     self.busqueda_360_en_curso = True
                     self.busqueda_360_inicio = time.time()
-                    self.botella_detectada_durante_busqueda = False  # <- Nuevo flag
+                    self.botella_detectada_durante_busqueda = False
+                    self.ultima_direccion_giro_botella = 1  # 1: izquierda, -1: derecha
+                    self.tiempo_perdida_botella = None
                     print("[INFO] Iniciando búsqueda 360 grados de botellas")
 
-                # Detectar botellas
-                botellas_encontradas, botella_centro = self.modelo_botellas.detectar_botellas(frame, dibujar=True)
+                tempo_giro = time.time() - self.busqueda_360_inicio
+                botellas_encontradas, botella_centro, botella_area = self.modelo_botellas.detectar_botellas(frame, dibujar=True)
 
                 if botellas_encontradas:
                     self.botella_detectada_durante_busqueda = True
-                    self.ultima_botella_centro = botella_centro  # Guardar posición da botella máis recente
-
-                # Comprobar se completou a busca de 360°
-                tempo_giro = time.time() - self.busqueda_360_inicio
-                if tempo_giro < self.busqueda_360_duracion:
-                    # Seguir xirando
+                    self.ultima_botella_centro = botella_centro
+                    self.tiempo_perdida_botella = None
+                    # Determina dirección de giro según dónde esté la botella
+                    error_x = (frame.shape[1]/2) - botella_centro[0]
+                    self.ultima_direccion_giro_botella = 1 if error_x > 0 else -1
+                    ang = 0.005 * error_x
                     twist.linear.x = 0
-                    twist.angular.z = 2 * math.pi / self.busqueda_360_duracion  # velocidade para 360° en duración
+                    twist.angular.z = ang
+                    cv2.putText(frame, "Orientando a botella", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
                     self.pub.publish(twist)
-                    cv2.putText(frame, "Buscando botella (360°)", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
                 else:
-                    # Finalizou a busca de 360°
-                    self.busqueda_360_en_curso = False
-                    twist.linear.x = 0
-                    twist.angular.z = 0
-                    self.pub.publish(twist)
+                    # Si la acabamos de perder, inicia temporizador
+                    if self.tiempo_perdida_botella is None:
+                        self.tiempo_perdida_botella = time.time()
+                    tiempo_sin_botella = time.time() - self.tiempo_perdida_botella
 
-                    if self.botella_detectada_durante_busqueda:
-                        print("[INFO] Botella detectada durante a busca, iniciando aproximación")
-                        # Aproximarse á botella detectada
-                        error_x = (frame.shape[1]/2) - self.ultima_botella_centro[0]
-                        ang = 0.005 * error_x
-
-                        # Vuelve a detectar la botella para obtener el área actual
-                        _, _, botella_area = self.modelo_botellas.detectar_botellas(frame, dibujar=True)
-
-                        if botella_area > self.umbral_area_botella_cerca:
-                            # Botella suficientemente cerca, paramos
-                            twist.linear.x = 0
-                            twist.angular.z = 0
-                            cv2.putText(frame, "Botella alcanzada", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-                            print("[INFO] Botella alcanzada, deteniendo robot")
-                            # Si quieres cambiar de estado aquí, puedes hacerlo
-                        else:
-                            twist.linear.x = 0.2  # Avanza hacia la botella
-                            twist.angular.z = ang
-                            cv2.putText(frame, "Estado: APROXIMACIÓN BOTELLA", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
+                    if tiempo_sin_botella < 3:  # segundos de margen para buscar
+                        # Gira lentamente en la última dirección
+                        twist.linear.x = 0
+                        twist.angular.z = 0.15 * self.ultima_direccion_giro_botella
                         self.pub.publish(twist)
+                        cv2.putText(frame, "Buscando botella perdida...", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
                     else:
-                        print("[INFO] Non se detectou botella, volvendo a RECONOCIMIENTO")
+                        print("[INFO] Botella no recuperada, volviendo a RECONOCIMIENTO")
                         self.estado_actual = "RECONOCIMIENTO"
-                        self.contador_perdida_botella = 0
                         self.busqueda_360_en_curso = False
-                        cv2.putText(frame, "No se encontro botella", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-
+                        self.botella_detectada_durante_busqueda = False
+                        self.ultima_botella_centro = None
+                        self.tiempo_perdida_botella = None
+                        twist.linear.x = 0
+                        twist.angular.z = 0
+                        self.pub.publish(twist)
+                        cv2.putText(frame, "No se encontró botella", (20, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
 
             else:
                 # Estado por defecto: parar robot
